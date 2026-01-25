@@ -1,33 +1,50 @@
 import os
+import pickle
 import numpy as np
 from flask import Flask, render_template, request
 from tensorflow.keras.models import load_model
-import tensorflow as tf
 
-# ------------------ TensorFlow safety (RENDER) ------------------
-os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
-os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0"
-tf.get_logger().setLevel("ERROR")
-
-# ------------------ Flask App ------------------
+# -----------------------------
+# Flask App
+# -----------------------------
 app = Flask(__name__)
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
 MODEL_PATH = os.path.join(BASE_DIR, "model", "ckd_model.keras")
+SCALER_PATH = os.path.join(BASE_DIR, "model", "scaler.pkl")
 
-# ------------------ Load model ONCE ------------------
-model = load_model(MODEL_PATH, compile=False)
+# -----------------------------
+# Load model & scaler ONCE
+# -----------------------------
+model = load_model(MODEL_PATH)
 
-# ------------------ Routes ------------------
+with open(SCALER_PATH, "rb") as f:
+    scaler = pickle.load(f)
+
+# -----------------------------
+# Routes
+# -----------------------------
 @app.route("/")
+def login():
+    return render_template("login.html")
+
+
+@app.route("/home")
 def home():
     return render_template("home.html")
+
 
 @app.route("/predict", methods=["GET", "POST"])
 def predict():
     if request.method == "POST":
         try:
+            # ----------------------------------------
+            # IMPORTANT: 25 FEATURES (MATCH TRAINING)
+            # ----------------------------------------
             features = [
+                0,  # ✅ Dummy ID column (required)
+
                 float(request.form["age"]),
                 float(request.form["bp"]),
                 float(request.form["sg"]),
@@ -54,17 +71,31 @@ def predict():
                 float(request.form["ane"]),
             ]
 
-            X = np.array(features).reshape(1, -1)
+            # Convert to NumPy
+            input_data = np.array(features).reshape(1, -1)
 
-            prediction = model.predict(X, verbose=0)[0][0]
-            confidence = round(prediction * 100, 2)
+            # Scale input
+            input_scaled = scaler.transform(input_data)
 
-            result = "CKD Detected" if prediction > 0.5 else "No CKD Detected"
+            # Predict
+            prediction = model.predict(input_scaled)
+            confidence = float(prediction[0][0]) * 100
+
+            if prediction[0][0] >= 0.5:
+                result = "CKD Detected"
+                color = "danger"
+                image = "ckd.jpg"
+            else:
+                result = "No CKD Detected"
+                color = "success"
+                image = "no_ckd.jpg"
 
             return render_template(
                 "result.html",
                 result=result,
-                confidence=confidence
+                confidence=f"{confidence:.2f}",
+                color=color,
+                image=image,
             )
 
         except Exception as e:
@@ -72,7 +103,9 @@ def predict():
 
     return render_template("predict.html")
 
-# ------------------ Run ------------------
+
+# -----------------------------
+# Run App (Local only)
+# -----------------------------
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 10000))
-    app.run(host="0.0.0.0", port=port)
+    app.run(host="0.0.0.0", port=10000)
