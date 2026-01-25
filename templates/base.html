@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CKD Prediction System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<div class="header">
+    <img src="{{ url_for('static', filename='images/logo.png') }}" class="logo">
+    <h2>Chronic Kidney Disease Prediction System</h2>
+</div>
+
+<div class="page-content">
+    {% block content %}{% endblock %}
+</div>
+
+</body>
+</html>

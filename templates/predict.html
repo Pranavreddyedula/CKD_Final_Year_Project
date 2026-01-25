@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="card wide">
+    <h2>Patient Medical Details</h2>
+
+    <form method="POST" action="/predict" class="form-grid">
+
+        <!-- NUMERIC FIELDS -->
+        <input type="number" step="any" name="age" placeholder="Age" required>
+        <input type="number" step="any" name="bp" placeholder="Blood Pressure" required>
+        <input type="number" step="any" name="sg" placeholder="Specific Gravity" required>
+        <input type="number" step="any" name="al" placeholder="Albumin" required>
+        <input type="number" step="any" name="su" placeholder="Sugar" required>
+
+        <input type="number" step="any" name="bgr" placeholder="Blood Glucose Random" required>
+        <input type="number" step="any" name="bu" placeholder="Blood Urea" required>
+        <input type="number" step="any" name="sc" placeholder="Serum Creatinine" required>
+        <input type="number" step="any" name="sod" placeholder="Sodium" required>
+        <input type="number" step="any" name="pot" placeholder="Potassium" required>
+
+        <input type="number" step="any" name="hemo" placeholder="Hemoglobin" required>
+        <input type="number" step="any" name="pcv" placeholder="Packed Cell Volume" required>
+        <input type="number" step="any" name="wc" placeholder="White Blood Cell Count" required>
+        <input type="number" step="any" name="rc" placeholder="Red Blood Cell Count" required>
+
+        <!-- DROPDOWNS (YES = 1, NO = 0) -->
+        <select name="rbc" required>
+            <option value="">RBC</option>
+            <option value="1">Normal</option>
+            <option value="0">Abnormal</option>
+        </select>
+
+        <select name="pc" required>
+            <option value="">Pus Cell</option>
+            <option value="1">Normal</option>
+            <option value="0">Abnormal</option>
+        </select>
+
+        <select name="pcc" required>
+            <option value="">Pus Cell Clumps</option>
+            <option value="1">Yes</option>
+            <option value="0">No</option>
+        </select>
+
+        <select name="ba" required>
+            <option value="">Bacteria</option>
+            <option value="1">Yes</option>
+            <option value="0">No</option>
+        </select>
+
+        <select name="htn" required>
+            <option value="">Hypertension</option>
+            <option value="1">Yes</option>
+            <option value="0">No</option>
+        </select>
+
+        <select name="dm" required>
+            <option value="">Diabetes Mellitus</option>
+            <option value="1">Yes</option>
+            <option value="0">No</option>
+        </select>
+
+        <select name="cad" required>
+            <option value="">Coronary Artery Disease</option>
+            <option value="1">Yes</option>
+            <option value="0">No</option>
+        </select>
+
+        <select name="appet" required>
+            <option value="">Appetite</option>
+            <option value="1">Good</option>
+            <option value="0">Poor</option>
+        </select>
+
+        <select name="pe" required>
+            <option value="">Pedal Edema</option>
+            <option value="1">Yes</option>
+            <option value="0">No</option>
+        </select>
+
+        <select name="ane" required>
+            <option value="">Anemia</option>
+            <option value="1">Yes</option>
+            <option value="0">No</option>
+        </select>
+
+        <!-- SUBMIT -->
+        <div class="full-width">
+            <button type="submit" class="btn-danger">Predict CKD</button>
+        </div>
+
+    </form>
+</div>
+
+{% endblock %}
+
