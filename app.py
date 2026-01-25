@@ -1,28 +1,24 @@
 import os
-import pickle
 import numpy as np
 from flask import Flask, render_template, request
 from tensorflow.keras.models import load_model
 import tensorflow as tf
 
-# ---- TensorFlow safety for Render ----
+# ------------------ TensorFlow safety (RENDER) ------------------
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0"
 tf.get_logger().setLevel("ERROR")
 
+# ------------------ Flask App ------------------
 app = Flask(__name__)
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
 MODEL_PATH = os.path.join(BASE_DIR, "model", "ckd_model.keras")
-SCALER_PATH = os.path.join(BASE_DIR, "model", "scaler.pkl")
 
-# ---- Load model ONCE ----
+# ------------------ Load model ONCE ------------------
 model = load_model(MODEL_PATH, compile=False)
 
-with open(SCALER_PATH, "rb") as f:
-    scaler = pickle.load(f)
-
+# ------------------ Routes ------------------
 @app.route("/")
 def home():
     return render_template("home.html")
@@ -59,12 +55,11 @@ def predict():
             ]
 
             X = np.array(features).reshape(1, -1)
-            X_scaled = scaler.transform(X)
 
-            pred = model.predict(X_scaled, verbose=0)[0][0]
-            confidence = round(pred * 100, 2)
+            prediction = model.predict(X, verbose=0)[0][0]
+            confidence = round(prediction * 100, 2)
 
-            result = "CKD Detected" if pred > 0.5 else "No CKD Detected"
+            result = "CKD Detected" if prediction > 0.5 else "No CKD Detected"
 
             return render_template(
                 "result.html",
@@ -77,7 +72,7 @@ def predict():
 
     return render_template("predict.html")
 
-
+# ------------------ Run ------------------
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
