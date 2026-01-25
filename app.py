@@ -4,27 +4,20 @@ import numpy as np
 from flask import Flask, render_template, request
 from tensorflow.keras.models import load_model
 
-# -----------------------------
-# Flask App
-# -----------------------------
 app = Flask(__name__)
 
+# ---------- PATHS ----------
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
 MODEL_PATH = os.path.join(BASE_DIR, "model", "ckd_model.keras")
 SCALER_PATH = os.path.join(BASE_DIR, "model", "scaler.pkl")
 
-# -----------------------------
-# Load model & scaler ONCE
-# -----------------------------
+# ---------- LOAD MODEL & SCALER ONCE ----------
 model = load_model(MODEL_PATH)
 
 with open(SCALER_PATH, "rb") as f:
     scaler = pickle.load(f)
 
-# -----------------------------
-# Routes
-# -----------------------------
+# ---------- ROUTES ----------
 @app.route("/")
 def login():
     return render_template("login.html")
@@ -39,11 +32,9 @@ def home():
 def predict():
     if request.method == "POST":
         try:
-            # ----------------------------------------
-            # IMPORTANT: 25 FEATURES (MATCH TRAINING)
-            # ----------------------------------------
+            # ✅ EXACT 25 FEATURES (MODEL EXPECTS THIS)
             features = [
-                0,  # ✅ Dummy ID column (required)
+                0,  # dummy id column
 
                 float(request.form["age"]),
                 float(request.form["bp"]),
@@ -71,31 +62,20 @@ def predict():
                 float(request.form["ane"]),
             ]
 
-            # Convert to NumPy
             input_data = np.array(features).reshape(1, -1)
 
-            # Scale input
+            # scale input
             input_scaled = scaler.transform(input_data)
 
-            # Predict
-            prediction = model.predict(input_scaled)
-            confidence = float(prediction[0][0]) * 100
+            prediction = model.predict(input_scaled)[0][0]
+            confidence = round(prediction * 100, 2)
 
-            if prediction[0][0] >= 0.5:
-                result = "CKD Detected"
-                color = "danger"
-                image = "ckd.jpg"
-            else:
-                result = "No CKD Detected"
-                color = "success"
-                image = "no_ckd.jpg"
+            result = "CKD Detected" if prediction > 0.5 else "No CKD Detected"
 
             return render_template(
                 "result.html",
                 result=result,
-                confidence=f"{confidence:.2f}",
-                color=color,
-                image=image,
+                confidence=confidence
             )
 
         except Exception as e:
@@ -104,8 +84,6 @@ def predict():
     return render_template("predict.html")
 
 
-# -----------------------------
-# Run App (Local only)
-# -----------------------------
+# ---------- RUN ----------
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=10000)
+    app.run()
