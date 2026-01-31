@@ -1,89 +1,72 @@
-import os
-import pickle
-import numpy as np
 from flask import Flask, render_template, request
+import numpy as np
+import joblib
 from tensorflow.keras.models import load_model
 
 app = Flask(__name__)
 
-# ---------- PATHS ----------
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-MODEL_PATH = os.path.join(BASE_DIR, "model", "ckd_model.keras")
-SCALER_PATH = os.path.join(BASE_DIR, "model", "scaler.pkl")
+# Load model & scaler
+model = load_model("model/ckd_model.keras")
+scaler = joblib.load("scaler.joblib")
 
-# ---------- LOAD MODEL & SCALER ONCE ----------
-model = load_model(MODEL_PATH)
+binary_map = {
+    "yes": 1, "no": 0,
+    "present": 1, "notpresent": 0,
+    "abnormal": 1, "normal": 0,
+    "poor": 1, "good": 0
+}
 
-with open(SCALER_PATH, "rb") as f:
-    scaler = pickle.load(f)
-
-# ---------- ROUTES ----------
-@app.route("/")
+@app.route('/')
 def login():
-    return render_template("login.html")
+    return render_template('login.html')
 
-
-@app.route("/home")
+@app.route('/home')
 def home():
-    return render_template("home.html")
+    return render_template('home.html')
 
-
-@app.route("/predict", methods=["GET", "POST"])
+@app.route('/predict', methods=['GET', 'POST'])
 def predict():
-    if request.method == "POST":
+    if request.method == 'POST':
         try:
-            # ✅ EXACT 25 FEATURES (MODEL EXPECTS THIS)
             features = [
-                0,  # dummy id column
-
-                float(request.form["age"]),
-                float(request.form["bp"]),
-                float(request.form["sg"]),
-                float(request.form["al"]),
-                float(request.form["su"]),
-                float(request.form["bgr"]),
-                float(request.form["bu"]),
-                float(request.form["sc"]),
-                float(request.form["sod"]),
-                float(request.form["pot"]),
-                float(request.form["hemo"]),
-                float(request.form["pcv"]),
-                float(request.form["wc"]),
-                float(request.form["rc"]),
-                float(request.form["rbc"]),
-                float(request.form["pc"]),
-                float(request.form["pcc"]),
-                float(request.form["ba"]),
-                float(request.form["htn"]),
-                float(request.form["dm"]),
-                float(request.form["cad"]),
-                float(request.form["appet"]),
-                float(request.form["pe"]),
-                float(request.form["ane"]),
+                float(request.form['age']),
+                float(request.form['bp']),
+                float(request.form['sg']),
+                float(request.form['al']),
+                float(request.form['su']),
+                binary_map[request.form['rbc'].lower()],
+                binary_map[request.form['pc'].lower()],
+                binary_map[request.form['pcc'].lower()],
+                binary_map[request.form['ba'].lower()],
+                float(request.form['bgr']),
+                float(request.form['bu']),
+                float(request.form['sc']),
+                float(request.form['sod']),
+                float(request.form['pot']),
+                float(request.form['hemo']),
+                float(request.form['pcv']),
+                float(request.form['wc']),
+                float(request.form['rc']),
+                binary_map[request.form['htn'].lower()],
+                binary_map[request.form['dm'].lower()],
+                binary_map[request.form['cad'].lower()],
+                binary_map[request.form['appet'].lower()],
+                binary_map[request.form['pe'].lower()],
+                binary_map[request.form['ane'].lower()]
             ]
 
             input_data = np.array(features).reshape(1, -1)
-
-            # scale input
             input_scaled = scaler.transform(input_data)
 
-            prediction = model.predict(input_scaled)[0][0]
-            confidence = round(prediction * 100, 2)
+            prediction = model.predict(input_scaled)
+            result = "CKD Detected" if prediction[0][0] > 0.5 else "No CKD Detected"
 
-            result = "CKD Detected" if prediction > 0.5 else "No CKD Detected"
-
-            return render_template(
-                "result.html",
-                result=result,
-                confidence=confidence
-            )
+            return render_template('result.html', result=result)
 
         except Exception as e:
-            return f"Prediction error: {e}"
+            return f"Error occurred: {e}"
 
-    return render_template("predict.html")
+    return render_template('predict.html')
 
-
-# ---------- RUN ----------
 if __name__ == "__main__":
-    app.run()
+    app.run(host="0.0.0.0", port=5000)
